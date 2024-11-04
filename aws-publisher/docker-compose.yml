@@ -1,0 +1,5 @@
+services:
+  publisher:
+    image: hub.foundries.io/${FACTORY}/aws-publisher:latest
+    volumes:
+      - /var/sota:/var/sota:ro
