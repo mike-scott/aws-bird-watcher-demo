@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+import logging
 import os
 import subprocess
 from tempfile import TemporaryDirectory
@@ -9,7 +10,7 @@ from time import sleep
 import paho.mqtt.client as mqtt
 
 
-def get_topic():
+def get_device_uuid():
     out = subprocess.check_output(["openssl", "x509", "-in", "/var/sota/client.pem", "-noout", "-subject"])
     line = out.decode()
     line = line.replace("subject=","")
@@ -17,7 +18,7 @@ def get_topic():
     for part in parts:
         if part.startswith("CN"):
             cn = part.split("=")[1].strip()
-            return "testtopic/" + cn
+            return cn
     raise RuntimeError("Can't find CN from certification:" + line)
 
 
@@ -56,22 +57,22 @@ def get_freemem_percent():
 
 
 def main():
-    topic = get_topic()
-    print("Topic is", topic)
+    uuid = get_device_uuid()
+    logging.warning("Device UUID is %s", uuid)
     mqttc = get_client()
     mqttc.connect(os.environ["AWSIOT_SERVER"], 8883)
-    print("Connected")
+    logging.warning("Connected")
 
     mqttc.loop_start()
     try:
         while True:
             free = get_freemem_percent()
-            data = {"memory_free_percent": free}
-            mqttc.publish(topic, json.dumps(data))
+            data = {"device_uuid": uuid, "memory_free_percent": free}
+            mqttc.publish("iot/host-metrics", json.dumps(data))
             sleep(5)
     except KeyboardInterrupt:
-        print("Exiting on ctrl-c")
-            
+        logging.warning("Exiting on ctrl-c")
+
     mqttc.disconnect()
 
 
