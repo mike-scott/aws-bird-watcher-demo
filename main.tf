@@ -111,3 +111,12 @@ resource "aws_iot_ca_certificate" "online_device_ca" {
     })
   }
 }
+
+resource "aws_timestreamwrite_database" "db" {
+  database_name = "aws-reinvent-2024"
+}
+
+resource "aws_timestreamwrite_table" "iot_metrics" {
+  database_name = aws_timestreamwrite_database.db.database_name
+  table_name    = "iot-metrics"
+}
