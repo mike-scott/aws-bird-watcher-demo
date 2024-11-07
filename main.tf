@@ -120,3 +120,37 @@ resource "aws_timestreamwrite_table" "iot_metrics" {
   database_name = aws_timestreamwrite_database.db.database_name
   table_name    = "iot-metrics"
 }
+
+resource "aws_cloudwatch_log_group" "timestream_errors" {
+  name              = "aws-reinvent-2024-timestream-errors"
+  retention_in_days = 3
+}
+
+resource "aws_iot_topic_rule" "rule" {
+  name        = "aws_reinvent_timestream"
+  enabled     = true
+  sql         = "SELECT * FROM 'iot/host-metrics'"
+  sql_version = "2016-03-23"
+
+  timestream {
+    role_arn      = aws_iam_role.iot_role.arn
+    database_name = aws_timestreamwrite_database.db.database_name
+    table_name    = aws_timestreamwrite_table.iot_metrics.table_name
+
+    dimension {
+      name  = "memory_free_percent"
+      value = "$${memory_free_percent}"
+    }
+    dimension {
+      name  = "device_uuid"
+      value = "$${device_uuid}"
+    }
+  }
+
+  error_action {
+    cloudwatch_logs {
+      role_arn       = aws_iam_role.iot_role.arn
+      log_group_name = aws_cloudwatch_log_group.timestream_errors.name
+    }
+  }
+}
