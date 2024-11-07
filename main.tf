@@ -138,10 +138,6 @@ resource "aws_iot_topic_rule" "rule" {
     table_name    = aws_timestreamwrite_table.iot_metrics.table_name
 
     dimension {
-      name  = "memory_free_percent"
-      value = "$${memory_free_percent}"
-    }
-    dimension {
       name  = "device_uuid"
       value = "$${device_uuid}"
     }
@@ -154,3 +150,101 @@ resource "aws_iot_topic_rule" "rule" {
     }
   }
 }
+
+resource "aws_iam_role" "grafana_role" {
+  name = "aws-reinvent-2024-grafana"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_iam_instance_profile" "grafana_profile" {
+  name = "aws-reinvent-2024-grafana"
+  role = aws_iam_role.grafana_role.name
+}
+
+resource "aws_iam_policy_attachment" "grafana_timestream" {
+  name       = "aws-reinvent-2024-grafana-timestream"
+  roles      = [aws_iam_role.grafana_role.name]
+  policy_arn = "arn:aws:iam::aws:policy/AmazonTimestreamReadOnlyAccess"
+}
+
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["099720109477"] # Canonical
+}
+
+resource "aws_security_group" "grafana" {
+  name = "aws-reinvent-2024-grafana"
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "grafana" {
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t2.micro"
+  key_name      = "andy qc yubi"
+  user_data     = file("setup-instance.sh")
+
+  tags = {
+    Name = "aws-reinvent-2024-grafana"
+  }
+
+  iam_instance_profile = aws_iam_instance_profile.grafana_profile.name
+  security_groups      = [aws_security_group.grafana.name]
+}
+
+/* Grafana query:
+SELECT
+    device_uuid,
+    CREATE_TIME_SERIES(time, measure_value::bigint) as memory_free_percent
+FROM $__database.$__table
+WHERE $__timeFilter
+    AND measure_name = '$__measure'
+GROUP BY
+    device_uuid
+*/
