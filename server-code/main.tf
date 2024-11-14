@@ -178,6 +178,11 @@ resource "aws_iam_policy_attachment" "grafana_timestream" {
   roles      = [aws_iam_role.grafana_role.name]
   policy_arn = "arn:aws:iam::aws:policy/AmazonTimestreamReadOnlyAccess"
 }
+resource "aws_iam_policy_attachment" "grafana_mqtt" {
+  name       = "aws-reinvent-2024-grafana-timestream"
+  roles      = [aws_iam_role.grafana_role.name]
+  policy_arn = "arn:aws:iam::aws:policy/AWSIoTDataAccess"
+}
 
 data "aws_ami" "ubuntu" {
   most_recent = true
