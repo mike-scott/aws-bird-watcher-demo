@@ -2,6 +2,10 @@
 
 set -ex
 
+apt update
+apt install -y python3 python3-flask python3-pip
+pip install awsiotsdk --break-system-packages
+
 cd /srv
 wget https://dl.grafana.com/enterprise/release/grafana-enterprise-7.3.6.linux-amd64.tar.gz
 tar -zxvf grafana-enterprise-7.3.6.linux-amd64.tar.gz
