@@ -3,7 +3,7 @@
 set -ex
 
 apt update
-apt install -y python3 python3-flask python3-pip
+apt install -y python3 python3-flask python3-gunicorn python3-pip
 pip install awsiotsdk --break-system-packages
 
 cd /srv

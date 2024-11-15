@@ -7,38 +7,25 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
     <script type="text/javascript">
         document.addEventListener('DOMContentLoaded', () => {
-            var dog = document.getElementById("dog");
-            var dogArticle = document.getElementById("dog-article");
-            var person = document.getElementById("person");
-            var personArticle = document.getElementById("person-article");
-            var laptop = document.getElementById("laptop");
-            var laptopArticle = document.getElementById("laptop-article");
+            var tbody = document.getElementById("objects-detected");
 
             eventSource = new EventSource('/stream');
             eventSource.onmessage = (e) => {
                 const data = JSON.parse(e.data)
+                // TODO we can use this if we need const uuid = data["device_uuid"];
+                delete data["device_uuid"];
                 console.log(data);
-                if (data.person) {
-                    person.style.display = "block";
-                    personArticle.className = "panel is-success";
-                } else {
-                    person.style.display = "none";
-                    personArticle.className = "panel is-danger";
-                }
-                if (data.dog) {
-                    dog.style.display = "block";
-                    dogArticle.className = "panel is-success";
-                } else {
-                    dog.style.display = "none";
-                    dogArticle.className = "panel is-danger";
-                }
-                if (data.laptop) {
-                    laptop.style.display = "block";
-                    laptopArticle.className = "panel is-success";
-                } else {
-                    laptop.style.display = "none";
-                    laptopArticle.className = "panel is-danger";
-                }
+                var newTbody = document.createElement("tbody");
+                Object.keys(data).forEach(function (key) {
+                    var row = document.createElement("tr");
+                    var td = document.createElement("td");
+                    var node = document.createTextNode(key);
+                    td.appendChild(node);
+                    row.appendChild(td);
+                    newTbody.appendChild(row);
+                });
+                tbody.parentNode.replaceChild(newTbody, tbody);
+                tbody = newTbody;
             };
         });
     </script>
@@ -47,34 +34,13 @@
 <body>
     <section class="section">
 
-        <div class="columns">
-            <div class="column">
-                <article id="person-article" class="panel is-success">
-                    <p class="panel-heading">Person</p>
-                    <div id="person" class="panel-block">
-                        <img
-                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Person_icon_BLACK-01.svg/124px-Person_icon_BLACK-01.svg.png" />
-                    </div>
-                </article>
-            </div>
-            <div class="column">
-                <article id="dog-article" class="panel is-success">
-                    <p class="panel-heading">Dog</p>
-                    <div id="dog" class="panel-block">
-                        <img
-                            src="https://png.pngtree.com/png-vector/20230515/ourmid/pngtree-dog-icon-transparent-background-free-vector-png-image_7097867.png" />
-                    </div>
-                </article>
-            </div>
-            <div class="column">
-                <article id="laptop-article" class="panel is-success">
-                    <p class="panel-heading">Laptop</p>
-                    <div id="laptop" class="panel-block">
-                        <img src="https://www.freeiconspng.com/thumbs/laptop-icon/laptop-icon-29.png" />
-                    </div>
-                </article>
-            </div>
-        </div>
+        <table class="table">
+            <thead>
+              <tr><th>Object detected</th></tr>
+            </thead>
+            <tbody id="objects-detected">
+            </tbody>
+        </table>
 
     </section>
 </body>
