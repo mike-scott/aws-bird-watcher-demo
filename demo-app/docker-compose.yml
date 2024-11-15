@@ -12,3 +12,12 @@ services:
       LOGLEVEL: INFO
     volumes:
       - /var/sota:/var/sota:ro
+
+  object-detection:
+      image: hub.foundries.io/${FACTORY}/qimsdk-lmp:latest
+      restart: unless-stopped
+      network_mode: "host"
+      stop_grace_period: 5s
+      command: /var/sota/compose-apps/demo-app/run-objecct-detection.sh
+      volumes:
+        - /opt:/opt
