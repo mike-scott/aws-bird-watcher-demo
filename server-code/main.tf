@@ -121,13 +121,18 @@ resource "aws_timestreamwrite_table" "iot_metrics" {
   table_name    = "iot-metrics"
 }
 
+resource "aws_timestreamwrite_table" "object_detection" {
+  database_name = aws_timestreamwrite_database.db.database_name
+  table_name    = "iot-object-detection"
+}
+
 resource "aws_cloudwatch_log_group" "timestream_errors" {
   name              = "aws-reinvent-2024-timestream-errors"
   retention_in_days = 3
 }
 
 resource "aws_iot_topic_rule" "rule" {
-  name        = "aws_reinvent_timestream"
+  name        = "aws_reinvent_metrics"
   enabled     = true
   sql         = "SELECT * FROM 'iot/host-metrics'"
   sql_version = "2016-03-23"
@@ -136,6 +141,31 @@ resource "aws_iot_topic_rule" "rule" {
     role_arn      = aws_iam_role.iot_role.arn
     database_name = aws_timestreamwrite_database.db.database_name
     table_name    = aws_timestreamwrite_table.iot_metrics.table_name
+
+    dimension {
+      name  = "device_uuid"
+      value = "$${device_uuid}"
+    }
+  }
+
+  error_action {
+    cloudwatch_logs {
+      role_arn       = aws_iam_role.iot_role.arn
+      log_group_name = aws_cloudwatch_log_group.timestream_errors.name
+    }
+  }
+}
+
+resource "aws_iot_topic_rule" "detection_rule" {
+  name        = "aws_reinvent_detection"
+  enabled     = true
+  sql         = "SELECT * FROM 'iot/object-detection'"
+  sql_version = "2016-03-23"
+
+  timestream {
+    role_arn      = aws_iam_role.iot_role.arn
+    database_name = aws_timestreamwrite_database.db.database_name
+    table_name    = aws_timestreamwrite_table.object_detection.table_name
 
     dimension {
       name  = "device_uuid"
@@ -215,6 +245,12 @@ resource "aws_security_group" "grafana" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
+    from_port   = 8000
+    to_port     = 8000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -247,6 +283,15 @@ resource "aws_instance" "grafana" {
 SELECT
     device_uuid,
     CREATE_TIME_SERIES(time, measure_value::bigint) as memory_free_percent
+FROM $__database.$__table
+WHERE $__timeFilter
+    AND measure_name = '$__measure'
+GROUP BY
+    device_uuid
+
+SELECT
+    device_uuid,
+    CREATE_TIME_SERIES(time, measure_value::bigint) as $__measure
 FROM $__database.$__table
 WHERE $__timeFilter
     AND measure_name = '$__measure'
