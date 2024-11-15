@@ -1,6 +1,14 @@
 services:
+  redis:
+    image: redis:alpine
+    network_mode: host
+    restart: unless-stopped
+
   publisher:
     image: hub.foundries.io/${FACTORY}/aws-publisher:latest
     restart: unless-stopped
+    network_mode: host
+    environment:
+      LOGLEVEL: INFO
     volumes:
       - /var/sota:/var/sota:ro
