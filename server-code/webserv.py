@@ -1,6 +1,8 @@
 import logging
 import os
 from queue import Queue
+from time import time
+from weakref import WeakSet
 
 from awsiot import mqtt5_client_builder
 from awscrt import mqtt5, auth
@@ -15,14 +17,15 @@ class IotSub:
     signing_region = "us-west-2"
     client = None
 
-    queue = Queue()
+    connections = WeakSet()
 
     @classmethod
     def start(cls):
         credentials_provider = auth.AwsCredentialsProvider.new_default_chain()
 
         def on_message(packet_data):
-            cls.queue.put(packet_data.publish_packet.payload)
+            for q in cls.connections:
+                q.put(packet_data.publish_packet.payload)
 
         cls.client = mqtt5_client_builder.websockets_with_default_aws_signing(
             endpoint="a3l1hey22pv92c-ats.iot.us-west-2.amazonaws.com",
@@ -64,9 +67,12 @@ def helloworld():
 @app.route("/stream")
 def stream():
     def eventStream():
+        q = Queue()
+        IotSub.connections.add(q)
         data = None
         while True:
-            data = IotSub.queue.get()
+            data = q.get()
+            print("andy yielding", time(), data)
             if data:
                 yield b"data: " + data + b"\n\n"
 
@@ -77,3 +83,6 @@ if __name__ == "__main__":
     port = os.environ.get("PORT", "8000")
     IotSub.start()
     app.run(port=int(port), host="0.0.0.0")
+else:
+    if IotSub.client == None:
+        IotSub.start()
