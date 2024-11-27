@@ -1,0 +1,20 @@
+#tensorflow==2.14.1
+tensorflow==2.18.0
+tf_keras==2.18.0
+#onnx==1.16.1
+onnx==1.17.0
+#onnxruntime==1.20.1
+onnxruntime==1.18.0
+onnxsim==0.4.36
+#onnx2keras==0.0.24
+protobuf==3.20.3
+tflite==2.3.0
+torch==1.13.1
+ultralytics==8.3.34
+typing-extensions==4.10.0
+numpy==1.26.4
+# WARNING: matplotlib installed version: 3.9.2 does not match tested version: 3.3.4
+# WARNING: opencv-python installed version: 4.10.0.84 does not match tested version: 4.5.4.58
+# WARNING: protobuf installed version: 4.25.5 does not match tested version: 3.19.6
+# WARNING: pyyaml installed version: 6.0.2 does not match tested version: 5.3
+# 'tf_keras', 'sng4onnx>=1.0.1', 'onnx_graphsurgeon>=0.3.26', 'onnx2tf>1.17.5,<=1.22.3', 'tflite_support'
